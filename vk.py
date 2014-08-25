@@ -197,10 +197,11 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         email = input("Email: ")
         password = getpass.getpass()
+        # если надоело вводить :)
+        # email = ''
+        # password = ''
         try:
             print('Получение токена...', end='')
-            #email = 'mavladi@gmail.com'
-            #password = 'Drjynfrnbpfwbz_2526'
             vk_data = GetToken(client_id,scope, email, password)
             user_id = vk_data['user_id']
             token = vk_data['access_token']
