@@ -64,6 +64,7 @@ def GetToken(client_id, scope,  email, password):
 
 def CallVK(method_name, parameters, token):
     # https://api.vk.com/method/'''METHOD_NAME'''?'''PARAMETERS'''&access_token='''ACCESS_TOKEN'''
+    time.sleep(0.78)
     parameters['access_token'] = token
     url = "https://api.vk.com/method/%s?%s" % (method_name, urllib.parse.urlencode(parameters)) 
     return json.loads(urllib.request.urlopen(url).read().decode())
@@ -76,7 +77,6 @@ def ShowFriends(user_id):
     friends = GetFriends(user_id)
     for friend_info in friends:
         print(friend_info['uid'], friend_info['last_name'], friend_info['first_name'])
-
 
 def GetMessages(uid, token, friends):
     len_hist = 0
@@ -93,15 +93,23 @@ def GetMessages(uid, token, friends):
 
 def GetUserById(uid, token):
     try:
-        vk_resp = CallVK('users.get', {'user_ids' : uid, 'fields' : 'sex'}, token)
-        user = vk_resp['response'][0]
-        return ''.join([ user['first_name'], ' ', user['last_name'] ])
+        if uid > 0:
+            vk_resp = CallVK('users.get', {'user_ids' : uid, 'fields' : 'sex'}, token)
+            user = vk_resp['response'][0]
+            return ''.join([ user['first_name'], ' ', user['last_name'] ])
+        elif uid < 0:
+            vk_resp = CallVK('groups.getById', {'group_ids' : abs(uid), 'fields' : 'city'}, token)
+            group = vk_resp['response'][0]
+            return ''.join([ 'Группа «', group['name'], '»' ])
+        else:
+            return 'Unknown obj.'
     except KeyError:
         if 'error' in vk_resp:
             print('\nОшибка ВКонтакте: ', vk_resp['error']['error_msg'])
+            raise
         else:
             print('Ошибка обращения к элементу по ключу.')
-        sys.exit()
+            raise
     except:
         raise
 
