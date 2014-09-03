@@ -4,7 +4,9 @@ from urllib.parse import urlparse
 
 arg_parser = argparse.ArgumentParser()
 
-arg_parser.add_argument('-u', "--uid", type=int, help='id пользователя')
+arg_parser.add_argument('-uid', type=int, help='ID пользователя')
+arg_parser.add_argument('-appid', default=4519325, type=int, help="ID приложения ВКонтакте")
+arg_parser.add_argument('-authurl',  action="store_true", help="вывести URL запроса")
 arg_parser.add_argument("-f", "--friends", action="store_true", help="только показать список друзей")
 arg_parser.add_argument("-d", "--dialogs", action="store_true", help="сохранит информацию о последних 200 диалогах пользователя в файл 'dialogs.txt'")
 
@@ -34,28 +36,31 @@ class FormParser(HTMLParser):
             self.form_parsed = True
 
 def GetToken(client_id, scope,  email, password):
-    parser = FormParser()
+    try:
+        parser = FormParser()
 
-    opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()),
-            urllib.request.HTTPRedirectHandler())
+        opener = urllib.request.build_opener(
+                urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()),
+                urllib.request.HTTPRedirectHandler())
 
-    parser.feed(
-        opener.open(
-            "http://oauth.vk.com/oauth/authorize?" + \
-            "redirect_uri=http://oauth.vk.com/blank.html&response_type=token&" + \
-            "client_id=%s&scope=%s&display=wap" % (client_id, ",".join(scope))).read().decode()
-        )
-    
-    parser.params['email'] = email
-    parser.params['pass'] = password
+        parser.feed(
+            opener.open(
+                "http://oauth.vk.com/oauth/authorize?" + \
+                "redirect_uri=http://oauth.vk.com/blank.html&response_type=token&" + \
+                "client_id=%s&scope=%s&display=wap" % (client_id, ",".join(scope))).read().decode()
+            )
+        
+        parser.params['email'] = email
+        parser.params['pass'] = password
 
-    #print(parser.params)
-
-    data = urllib.parse.urlencode(parser.params)
-    bin_data = data.encode('ascii')
-    response = opener.open(parser.url, bin_data)
-    return dict(x.split('=') for x in response.url.split('#')[1].split('&'))
+        data = urllib.parse.urlencode(parser.params)
+        bin_data = data.encode('ascii')
+        response = opener.open(parser.url, bin_data)
+        if args.authurl:
+            print("\nURL получения прав/токена:\n", response.url)
+        return dict(x.split('=') for x in response.url.split('#')[1].split('&'))
+    except:
+        raise
 
 def CallVK(method_name, parameters, token):
     # https://api.vk.com/method/'''METHOD_NAME'''?'''PARAMETERS'''&access_token='''ACCESS_TOKEN'''
@@ -131,11 +136,6 @@ def Bytes2Kb(bytes):
 
 def GenerateXML(messages, friends, uid):
     uname = GetUserById(uid, token)
-    #friends = dict(
-    #        [(profile['uid'], ''.join(
-    #            [profile['last_name'], ' ', profile['first_name']]
-    #            )) for profile in friends]
-    #            )
     counter = 0
     try:
         print('Генерируем XML...', end='')
@@ -196,9 +196,10 @@ if __name__ == "__main__":
     scope = ['friends','messages']
 
     if len(sys.argv) > 1:
+        # если надоело вводить, закомментить следующие две строки
         email = input("Email: ")
         password = getpass.getpass()
-        # если надоело вводить :)
+        # а эти две раскомментить
         # email = ''
         # password = ''
         try:
@@ -209,6 +210,7 @@ if __name__ == "__main__":
             print('Успешно.')
         except:
             print('Ошибка.')
+            raise
     if args.friends and not args.dialogs:
         ShowFriends(user_id)
     elif not args.friends and args.dialogs:
