@@ -199,7 +199,6 @@ def GenerateXML(messages, friends, uid):
 
 if __name__ == "__main__":
     args = arg_parser.parse_args()
-    print(args)
 
     # client_id - ID приложения ВКонтакте
     client_id = args.appid
