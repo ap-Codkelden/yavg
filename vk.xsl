@@ -97,12 +97,12 @@
    <xsl:attribute name="style">padding-left:20px;</xsl:attribute>
       <xsl:choose>
          <xsl:when test="not(contains(text(), '&#xA;'))">
-            <xsl:value-of select="text()"/>
+            <xsl:value-of disable-output-escaping = "yes" select="text()"/>
          </xsl:when>
          <xsl:otherwise>
-            <xsl:value-of select="substring-before(text(), '&#xA;')"/>
+            <xsl:value-of disable-output-escaping = "yes" select="substring-before(text(), '&#xA;')"/>
             <br/>
-            <xsl:value-of select="substring-after(text(), '&#xA;')"/>
+            <xsl:value-of disable-output-escaping = "yes" select="substring-after(text(), '&#xA;')"/>
          </xsl:otherwise>
       </xsl:choose>
    </p>
