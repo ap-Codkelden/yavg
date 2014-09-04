@@ -156,6 +156,7 @@ def GenerateXML(messages, friends, uid):
             msg.set(
                 "author", ('Переслано' if (not 'out' in message) else ('Вы' if message['out'] == 1 else uname)
                 ))
+            print(message['body'].replace('<br>','\n'))
             msg.text =  message['body'].replace('<br>','\n')
             if 'attachment' in message:
                 attachment_type = message['attachment']['type']
@@ -198,9 +199,10 @@ def GenerateXML(messages, friends, uid):
 
 if __name__ == "__main__":
     args = arg_parser.parse_args()
+    print(args)
 
     # client_id - ID приложения ВКонтакте
-    client_id = 4519325
+    client_id = args.appid
     scope = ['friends','messages']
 
     if len(sys.argv) > 1:
