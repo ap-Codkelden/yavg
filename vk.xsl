@@ -1,9 +1,13 @@
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output method="html" 
     encoding="utf-8" 
     indent="no" />   
 <xsl:template match="/">
    <html>
+      <head>
+         <meta charset="utf-8"/>
+         <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+      </head>
       <body>
          <xsl:attribute name="style">width=80%; margin: 0 auto;</xsl:attribute>
          <h2><xsl:attribute name="style">margin-bottom:60px;text-align:center;</xsl:attribute>
