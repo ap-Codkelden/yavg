@@ -108,7 +108,7 @@ def GetMessages(uid, token, friends, chat):
     else:
         uid=history[0]['uid']
         chat=True
-    GenerateXML(history, friends=friends, uid=uid, chat=chat)
+    GenerateXML(history, friends=friends, uid=uid, chat=chat,)
 
 
 def GetUserById(uid, token):
@@ -160,12 +160,18 @@ def UNIXTimeToString(unixtime):
     return datetime.datetime.fromtimestamp(unixtime).strftime('%d-%m-%Y %H:%M:%S')
 
 def Bytes2Kb(bytes):
-    return ''.join(
-        ['~',str(round(bytes/1024, 2)), ' Кб']
-        )
+    return ''.join(['~',str(round(bytes/1024, 2)), ' Кб'])
 
-def GenerateXML(messages, friends, uid, chat=None):
+def GenerateXML(messages, friends, uid, chat=None,):
+    # если это не чат, то будет использовано как имя 
+    # собеседника, иначе будет использовано как имя создателя чата
     uname = GetUserById(uid, token)
+    if chat:
+        # словарь с участниками чата
+        multi_user_chat_users = {}
+        for message in messages:
+            if message['uid'] not in multi_user_chat_users.keys():
+                multi_user_chat_users[message['uid']] = GetUserById(message['uid'], token)
     counter = 0
     try:
         print('Генерируем XML...', end='')
@@ -177,9 +183,7 @@ def GenerateXML(messages, friends, uid, chat=None):
             msg.set("datetime", UNIXTimeToString(message['date']))
             # 0 – полученное сообщение, 1 – отправленное сообщение, 2 - переслано
             msg.set("direction", '2' if (not 'out' in message) else str(message['out']))
-            msg.set(
-                "author", ('Переслано' if (not 'out' in message) else ('Вы' if message['out'] == 1 else uname)
-                ))
+            msg.set("author", ('Переслано' if (not 'out' in message) else ('Вы' if message['out'] == 1 else (uname if not chat else multi_user_chat_users[message['uid']]))))
             # print(message['body'].replace('<br>','\n'))
             msg.text =  message['body'].replace('<br>','\n')
             if 'attachment' in message:
