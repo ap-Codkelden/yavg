@@ -2,13 +2,18 @@ import  urllib.request, http.client, http.cookiejar, urllib.parse, getpass, date
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 
+__version__ = '0.2'
+
 arg_parser = argparse.ArgumentParser()
 
 arg_parser.add_argument('-uid', type=int, help='ID пользователя')
+arg_parser.add_argument('-chatid', type=int, default=0, help='ID многопользовательского чата')
 arg_parser.add_argument('-appid', default=4519325, type=int, help="ID приложения ВКонтакте")
 arg_parser.add_argument('-authurl',  action="store_true", help="вывести URL запроса")
+arg_parser.add_argument('-ascii',  action="store_true", help="При использовании опции -d сохранять JSON как файл ASCII")
 arg_parser.add_argument("-f", "--friends", action="store_true", help="только показать список друзей")
-arg_parser.add_argument("-d", "--dialogs", action="store_true", help="сохранит информацию о последних 200 диалогах пользователя в файл 'dialogs.txt'")
+arg_parser.add_argument("-s", "--stat", action="store_true", help="Показывать количество сохраненных сообщений")
+arg_parser.add_argument("-d", "--dialogs", action="store_true", help="сохранит информацию о последних 200 диалогах пользователя в файлы 'dialogs.txt' и 'dialogs.json'")
 
 
 class FormParser(HTMLParser):
@@ -78,18 +83,33 @@ def ShowFriends(user_id):
     for friend_info in friends:
         print(friend_info['uid'], friend_info['last_name'], friend_info['first_name'])
 
-def GetMessages(uid, token, friends):
-    len_hist = 0
+def GetMessages(uid, token, friends, chat):
     offset = 0
     history = []
+    count = 1
 
-    while len_hist!=1:
+    params = {'count': 200, 'rev': 1, 'offset': offset}
+    if not chat:
+        params['user_id'] = uid
+    else:
+        params['chat_id'] = chat
+
+    while count>0:
+        params['offset'] = offset
         time.sleep(0.5)
-        h = CallVK('messages.getHistory', {'user_id' : uid, 'count' : 200, 'rev' : 1, 'offset' : offset}, token)
-        len_hist = len(h['response'])
+        h = CallVK('messages.getHistory', params, token)
         history.extend(h['response'][1:])
+        count = len(h['response'][1:])
         offset+=200
-    GenerateXML(history, friends=friends, uid=uid)
+
+    if not chat:
+        uid=uid
+        chat=False
+    else:
+        uid=history[0]['uid']
+        chat=True
+    GenerateXML(history, friends=friends, uid=uid, chat=chat)
+
 
 def GetUserById(uid, token):
     try:
@@ -114,7 +134,7 @@ def GetUserById(uid, token):
         raise
 
 
-def GetDialogs():
+def GetDialogs(ascii=ascii):
     dialogs_list = []
     count = -1
     offset = 0
@@ -124,12 +144,14 @@ def GetDialogs():
         offset += 200
         dialogs_list.extend(d['response'][1:])
     dialogs_list = sorted(dialogs_list, key=lambda k: k['date'], reverse=True)
+    with open('dialogs.json', 'w', encoding='utf-8') as outfile:
+        json.dump(dialogs_list, outfile, ensure_ascii=ascii)
     u = ','.join([str(dialog['uid']) for dialog in dialogs_list])
     users_array = dict([ (user['uid'], ' '.join( [ user['last_name'], user['first_name']  ]) ) for user in CallVK('users.get', {'user_ids' : u}, token)['response'] ])
     try:
         with open('dialogs.txt','w',encoding='utf-8') as f:
             for dialog in dialogs_list:
-                f.write(''.join(['\t'.join([users_array[dialog['uid']], str(dialog['uid']), UNIXTimeToString(dialog['date']), dialog['body']]),'\n' ]))                
+                f.write(''.join(['\t'.join([users_array[dialog['uid']], str(dialog['uid']), UNIXTimeToString(dialog['date']), str(dialog['chat_id']) if 'chat_id' in dialog else '', dialog['body']]),'\n' ]))                
         print("Записано.")
     except:
         raise
@@ -142,12 +164,14 @@ def Bytes2Kb(bytes):
         ['~',str(round(bytes/1024, 2)), ' Кб']
         )
 
-def GenerateXML(messages, friends, uid):
+def GenerateXML(messages, friends, uid, chat=None):
     uname = GetUserById(uid, token)
     counter = 0
     try:
         print('Генерируем XML...', end='')
         root = ET.Element("conversation")
+        if args.stat:
+            total_msg_cnt = len(messages)
         for message in messages:
             msg = ET.SubElement(root, "message")
             msg.set("datetime", UNIXTimeToString(message['date']))
@@ -156,7 +180,7 @@ def GenerateXML(messages, friends, uid):
             msg.set(
                 "author", ('Переслано' if (not 'out' in message) else ('Вы' if message['out'] == 1 else uname)
                 ))
-            print(message['body'].replace('<br>','\n'))
+            # print(message['body'].replace('<br>','\n'))
             msg.text =  message['body'].replace('<br>','\n')
             if 'attachment' in message:
                 attachment_type = message['attachment']['type']
@@ -190,10 +214,13 @@ def GenerateXML(messages, friends, uid):
                         atts.set('type', message['attachment']['wall']['attachments'][0]['type'])
             tree = ET.ElementTree(root)
         root.set("friend",''.join(['пользователем ', uname]))
-        tree.write(''.join(['conversation_', uname.replace(' ', '_') ,'.xml']),encoding="UTF-8",xml_declaration=True)
-        print('Записано.')
+        history_type = 'chat_created_' if chat else 'conversation_'
+        tree.write(''.join([history_type, uname.replace(' ', '_') ,'.xml']),encoding="UTF-8",xml_declaration=True)
+        end_message = 'Записано {} сообщений.'.format(total_msg_cnt) if args.stat else 'Записано.'
+        print(end_message)
     except AttributeError:
         print('Ошибка установки атрибута XML.')
+        #raise
     except:
         raise
 
@@ -209,8 +236,8 @@ if __name__ == "__main__":
         email = input("Email: ")
         password = getpass.getpass()
         # а эти две раскомментить
-        # email = ''
-        # password = ''
+        # email = 'user@example.org'
+        # password = 'your_password'
         try:
             print('Получение токена...', end='')
             vk_data = GetToken(client_id,scope, email, password)
@@ -226,6 +253,11 @@ if __name__ == "__main__":
         GetDialogs()
     elif args.uid is not None:
         friends = GetFriends(user_id)
-        GetMessages(args.uid, token, friends)
+        chat = 0
+        GetMessages(args.uid, token, friends, chat)
+    elif args.chatid and args.uid is None:
+        friends = GetFriends(user_id)
+        chat = args.chatid
+        GetMessages(args.uid, token, friends, chat)
     else:
         arg_parser.print_help()
