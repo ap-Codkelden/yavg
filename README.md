@@ -60,9 +60,9 @@
 
 Пользователи Microsoft Windows вместо команды `python` могут использовать `py -3`, как описано [тут](https://docs.python.org/3.3/using/windows.html#python-launcher-for-windows).
 
-`py -3 vk.py -uid 12345` - сохранить диалог с пользователем, `id` которого `12345`
-`py -3 vk.py -f` - показать список своих друзей и их `id`
-`py -3 vk.py -d` - сохранит список диалогов в файлы `dialogs.txt`и `dialogs.json`
+* `py -3 vk.py -uid 12345` - сохранить диалог с пользователем, `id` которого `12345`
+* `py -3 vk.py -f` - показать список своих друзей и их `id`
+* `py -3 vk.py -d` - сохранит список диалогов в файлы `dialogs.txt`и `dialogs.json`
 
 
 ### Генерация HTML
