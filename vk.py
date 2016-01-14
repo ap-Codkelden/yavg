@@ -10,11 +10,10 @@ arg_parser.add_argument('-uid', type=int, help='ID пользователя')
 arg_parser.add_argument('-chatid', type=int, default=0, help='ID многопользовательского чата')
 arg_parser.add_argument('-appid', default=4519325, type=int, help="ID приложения ВКонтакте")
 arg_parser.add_argument('-authurl',  action="store_true", help="вывести URL запроса")
-arg_parser.add_argument('-ascii',  action="store_true", help="При использовании опции -d сохранять JSON как файл ASCII")
 arg_parser.add_argument("-f", "--friends", action="store_true", help="только показать список друзей")
 arg_parser.add_argument("-s", "--stat", action="store_true", help="Показывать количество сохраненных сообщений")
 arg_parser.add_argument("-d", "--dialogs", action="store_true", help="сохранит информацию о последних 200 диалогах пользователя в файлы 'dialogs.txt' и 'dialogs.json'")
-
+arg_parser.add_argument('-ascii',  action="store_true", help="При использовании опции -d сохранять JSON как файл ASCII")
 
 class FormParser(HTMLParser):
     def __init__(self):
